@@ -15,11 +15,11 @@ use pocketmine\event\Listener;
 use pocketmine\item\Item;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
-use pocketmine\nbt\tag\Byte;
-use pocketmine\nbt\tag\Compound;
-use pocketmine\nbt\tag\Double;
-use pocketmine\nbt\tag\Enum;
-use pocketmine\nbt\tag\Float;
+use pocketmine\nbt\tag\ByteTag;
+use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\nbt\tag\DoubleTag;
+use pocketmine\nbt\tag\EnumTag;
+use pocketmine\nbt\tag\FloatTag;
 
 use pocketmine\event\player\PlayerItemHeldEvent;
 use pocketmine\event\player\PlayerQuitEvent;
@@ -97,7 +97,9 @@ class Main extends PluginBase implements CommandExecutor, Listener {
 		if ($e->isCancelled()) return;
 		$p = $e->getPlayer();
 		$n = $p->getName();
+		//echo __METHOD__.",".__LINE__."\n";//##DEBUG
 		if ($e->getItem()->getID() == Item::BOW) return;
+		//echo __METHOD__.",".__LINE__."\n";//##DEBUG
 		if (isset($this->shooters[$n])) {
 			unset($this->shooters[$n]);
 			$p->sendMessage("Disarming RPG");
@@ -129,11 +131,15 @@ class Main extends PluginBase implements CommandExecutor, Listener {
 
 	public function onArrowHit(ProjectileHitEvent $ev) {
 		//if ($ev->isCancelled()) return; // NOT CANCELLABLE!
+		echo __METHOD__.",".__LINE__."\n";//##DEBUG
 		$et = $ev->getEntity();
 		if (!$et->namedtag) return;
+		echo __METHOD__.",".__LINE__."\n";//##DEBUG
 		$c = explode(":",$et->namedtag->getName());
 		if (count($c) != 3) return;
+		echo __METHOD__.",".__LINE__."\n";//##DEBUG
 		if ($c[0] != "dumdum") return;
+		echo __METHOD__.",".__LINE__."\n";//##DEBUG
 
 		$this->getServer()->getPluginManager()->callEvent($cc = new ExplosionPrimeEvent($et, intval($c[1])));
 		if ($cc->isCancelled()) return;
@@ -207,6 +213,7 @@ class Main extends PluginBase implements CommandExecutor, Listener {
 	public function onEnable(){
 		if (!is_dir($this->getDataFolder())) mkdir($this->getDataFolder());
 		$defaults = [
+			"version" => $this->getDescription()->getVersion(),
 			"presets" => [
 				"short" => [ 30, 0.5 ],
 				"long" => [ 80, 1.0 ],
@@ -214,7 +221,7 @@ class Main extends PluginBase implements CommandExecutor, Listener {
 			],
 			"mines" => [
 				"block1" => Block::TNT,
-				"block2" => Block::NETHER_REACTOR,
+				"block2" => Block::REDSTONE_WIRE,
 			],
 			"settings" => [
 				"failure" => 385,
@@ -317,6 +324,7 @@ class Main extends PluginBase implements CommandExecutor, Listener {
 
 		$this->getServer()->getPluginManager()->callEvent($cc = new ExplosionPrimeEvent($source, $yield));
 		if ($cc->isCancelled()) {
+			//echo("Cancelled\n");//##DEBUG
 			return;
 		}
 
@@ -457,19 +465,19 @@ class Main extends PluginBase implements CommandExecutor, Listener {
 	}
 	private function scorchit($pos,$dir,$fuse) {
 		$nbt =
-			  new Compound("",
-								["Pos" => new Enum("Pos",
-														 [new Double("", $pos->x),
-														  new Double("", $pos->y),
-														  new Double("", $pos->z)]),
-								 "Motion" => new Enum("Motion",
-															 [new Double("",$dir->x),
-															  new Double("",$dir->y),
-															  new Double("",$dir->z)]),
-								 "Rotation" => new Enum("Rotation",
-																[new Float("", 0),
-																 new Float("", 0)]),
-								 "Fuse" => new Byte("Fuse", $fuse)]);
+			  new CompoundTag("",
+								["Pos" => new EnumTag("Pos",
+														 [new DoubleTag("", $pos->x),
+														  new DoubleTag("", $pos->y),
+														  new DoubleTag("", $pos->z)]),
+								 "Motion" => new EnumTag("Motion",
+															 [new DoubleTag("",$dir->x),
+															  new DoubleTag("",$dir->y),
+															  new DoubleTag("",$dir->z)]),
+								 "Rotation" => new EnumTag("Rotation",
+																[new FloatTag("", 0),
+																 new FloatTag("", 0)]),
+								 "Fuse" => new ByteTag("Fuse", $fuse)]);
 
 		$entity = Entity::createEntity("PrimedTNT",
 												 $pos->getLevel()->getChunk($pos->x >> 4, $pos->z >> 4),
